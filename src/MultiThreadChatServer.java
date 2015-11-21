@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
@@ -213,8 +214,8 @@ class clientThreadPool {
     }
 
     clientThread athread = this.searchThreadByName(uname);
-    if (athread) {
-      athread.os.print("PM from %s %s", uname, msg);
+    if (athread != null) {
+      athread.os.print("PM from "+uname+" "+msg);
     }
   }
 
@@ -271,9 +272,10 @@ class clientThread extends Thread {
       os = new PrintStream(clientSocket.getOutputStream());
 
       System.out.println("request user+passw");
+      String name = is.readLine().trim();
       while (true) {
         os.println("Enter your name.");
-        String name = is.readLine().trim();
+        
         if (!pool.isUserNameExists(name)) {
           break;
         } else {
@@ -320,9 +322,10 @@ class clientThread extends Thread {
           String auser = line.replaceAll("#del@", ""); //get username
           pool.deleteUser(auser);
         } else if (line.startsWith("#pm")) {
-          String line = line.replaceAll("#pm", "");
+          //String line = "";
+          line.replaceAll("#pm", "");
           String uname = "";
-          string messg = "";
+          String messg = "";
 
           if (line.indexOf(":") > 0) { // valid command, separated by ":"
             String[] parts = line.split(":");

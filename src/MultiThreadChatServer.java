@@ -118,7 +118,7 @@ class clientThreadPool {
 
   public clientThread searchThreadByName(String aname) {
     clientThread ret = null;
-    clientThread aret;
+    clientThread aret = null;
 
     aname = aname.trim();
     String bname = "";
@@ -126,7 +126,12 @@ class clientThreadPool {
     Iterator<clientThread> foreach = threads.iterator();
     while (foreach.hasNext()) {
       aret = foreach.next();
-      bname = aret.usern.trim();
+      if (aret == null) {
+        continue;
+      }
+
+      bname = aret.usern;
+      bname = bname.trim();
       if (bname.equals(aname)) {
         ret = aret;
         break;
@@ -167,7 +172,8 @@ class clientThreadPool {
     Iterator<clientThread> foreach = threads.iterator();
     while (foreach.hasNext()) {
       athread = foreach.next();
-      buser = athread.usern.trim();
+      buser = athread.usern;
+      buser = buser.trim();
       if (buser.equals(auser)) {
         aret = auser + " status: " + athread.status;
         break;
@@ -275,6 +281,7 @@ class clientThread extends Thread {
         os.println("Enter your name.");
         String name = is.readLine().trim();
         if (!pool.isUserNameExists(name)) {
+          os.println("USER OK");
           break;
         } else {
           os.println("User " + name + " already exists..");

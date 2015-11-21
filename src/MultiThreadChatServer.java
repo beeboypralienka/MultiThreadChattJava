@@ -207,6 +207,17 @@ class clientThreadPool {
     athread.doDie();
   }
 
+  public void sendPM(String uname, String msg) {
+    if (!this.isUserNameExists(uname)) {
+      return;
+    }
+
+    clientThread athread = this.searchThreadByName(uname);
+    if (athread) {
+      athread.os.print("PM from %s %s", uname, msg);
+    }
+  }
+
 }
 
 /*
@@ -260,8 +271,15 @@ class clientThread extends Thread {
       os = new PrintStream(clientSocket.getOutputStream());
 
       System.out.println("request user+passw");
-      os.println("Enter your name.");
-      String name = is.readLine().trim();
+      while (true) {
+        os.println("Enter your name.");
+        String name = is.readLine().trim();
+        if (!pool.isUserNameExists(name)) {
+          break;
+        } else {
+          os.println("User " + name + " already exists..");
+        }
+      }
       os.println("Enter your password.");
       String passw = is.readLine().trim();
       this.usern = name;
@@ -302,7 +320,29 @@ class clientThread extends Thread {
           String auser = line.replaceAll("#del@", ""); //get username
           pool.deleteUser(auser);
         } else if (line.startsWith("#pm")) {
-          String auser = line.replaceAll("#pm@", ""); //get username
+          String line = line.replaceAll("#pm", "");
+          String uname = "";
+          string messg = "";
+
+          if (line.indexOf(":") > 0) { // valid command, separated by ":"
+            String[] parts = line.split(":");
+            uname = parts[0].replaceAll("@", "");
+            messg = line.replaceAll("@" + uname + ":", "").trim();
+          } else { // not valid command, no ":"
+            String[] parts = line.split(" ");
+            uname = parts[0].replaceAll("@", "");
+            messg = line.replaceAll("@" + uname, "").trim();
+          }
+
+          if (uname.length() < 1) {
+            os.println("ERROR: invalid command, empty user name");
+          } else {
+            if (!pool.isUserNameExists(uname)) {
+              os.println("ERROR: " + uname + " not exists");
+            } else {
+              pool.sendPM(uname, messg);
+            }
+          }
         } else {
           // send to all users in room, repeat message from a user to all user
           pool.sendMessageToAll("<" + usern + "> " + line);

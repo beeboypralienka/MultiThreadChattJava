@@ -8,6 +8,13 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Date;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.StringTokenizer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -69,7 +76,7 @@ public class MultiThreadChatServer {
 
 /*
  Datas
-*/
+ */
 class chatData {
 }
 
@@ -113,16 +120,24 @@ class clientThreadPool {
     clientThread ret = null;
     clientThread aret;
 
+    aname = aname.trim();
+    String bname = "";
+
     Iterator<clientThread> foreach = threads.iterator();
     while (foreach.hasNext()) {
       aret = foreach.next();
-      if (aret.usern == aname) {
+      bname = aret.usern.trim();
+      if (bname.equals(aname)) {
         ret = aret;
         break;
       }
     }//while
 
     return ret;
+  }
+
+  public Boolean isUserNameExists(String aname) {
+    return this.searchThreadByName(aname) != null;
   }
 
   public void sendMessageToAll(String msg) {
@@ -144,6 +159,54 @@ class clientThreadPool {
       }
     }//while
   }
+
+  public String getUserStatus(String auser) {
+    String aret = "--none--";
+    String buser = "";
+    clientThread athread;
+    Iterator<clientThread> foreach = threads.iterator();
+    while (foreach.hasNext()) {
+      athread = foreach.next();
+      buser = athread.usern.trim();
+      if (buser.equals(auser)) {
+        aret = auser + " status: " + athread.status;
+        break;
+      }
+    }//while
+    return aret;
+  }
+
+  public String getUserList() {
+    ArrayList<String> list = new ArrayList<String>();
+    clientThread athread;
+    Iterator<clientThread> foreach = threads.iterator();
+    while (foreach.hasNext()) {
+      athread = foreach.next();
+      if (athread.visible) {
+        list.add(athread.usern);
+      }
+    }//while
+
+    String joined = list.toString().replaceAll("\\[|\\]", "").trim();
+    if (joined.length() < 1) {
+      joined = "---empty---";
+    }
+    return joined;
+  }
+
+  public void deleteUser(String ausern) {
+    clientThread athread = this.searchThreadByName(ausern);
+    if (athread == null) {
+      System.out.println("delUser (notfound): " + ausern);
+      return;
+    }
+
+    System.out.println("delUser: " + ausern);
+    this.removeClientThread(athread);
+    athread.os.println("#die");
+    athread.doDie();
+  }
+
 }
 
 /*
@@ -157,66 +220,94 @@ class clientThreadPool {
 class clientThread extends Thread {
 
   public BufferedReader is = null;
-  //private DataInputStream is = null;
   public PrintStream os = null;
   public Socket clientSocket = null;
-
-  private clientThread[] threads;
-  private MultiThreadChatServer schat = null;
 
   public clientThreadPool pool = null;
 
   public String usern;
   public String passw;
   public String mode;
-
-  public clientThread(Socket clientSocket, clientThread[] threads) {
-    this.clientSocket = clientSocket;
-    this.threads = threads;
-    this.mode = "chat";
-  }
+  public String status;
+  public Boolean visible;
+  public Boolean running;
 
   public clientThread(Socket clientSocket, clientThreadPool apool) {
     this.clientSocket = clientSocket;
     this.pool = apool;
     this.mode = "chat";
+    this.visible = true;
+    this.status = "";
+    this.running = true;
     System.out.println("thread created");
   }
 
+  public void doDie() {
+    os.println("#die");
+    System.out.println("send #die to: " + this.usern);
+    this.running = false;
+    this.interrupt();
+  }
+
+  @Override
   public void run() {
 
     try {
       /*
        * Create input and output streams for this client.
        */
-      //is = new DataInputStream(clientSocket.getInputStream()); //bi-directional link
       is = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
       os = new PrintStream(clientSocket.getOutputStream());
-      System.out.println("request user+passw");
 
+      System.out.println("request user+passw");
       os.println("Enter your name.");
       String name = is.readLine().trim();
       os.println("Enter your password.");
       String passw = is.readLine().trim();
       this.usern = name;
       this.passw = passw;
-      
+
       os.println("Hello " + name + " to our chat room.\nTo leave enter #quit in a new line");
 
       String amsg;
       amsg = "*** A new user " + name + " entered the chat room !!! ***";
       pool.sendMessageToAll_exceptMe(amsg, this);
 
-      while (true) {
-        String line = is.readLine();
+      while (this.running && !Thread.currentThread().isInterrupted()) {
+        String line = is.readLine().trim();
         if (line.startsWith("#quit")) {
           break;
+        } else if (line.startsWith("#date")) {
+          DateFormat dateFormat = new SimpleDateFormat("dd-MMMM-yyyy HH:mm:ss");
+          Date date = new Date();
+          os.println(dateFormat.format(date));
+        } else if (line.startsWith("#list")) {
+          os.println(this.pool.getUserList());
+        } else if (line.startsWith("#hideme")) {
+          this.visible = false;
+          os.println("Visible changed to: " + this.visible);
+          pool.sendMessageToAll("A user hide from room");
+        } else if (line.startsWith("#showme")) {
+          this.visible = true;
+          os.println("Visible changed to: " + this.visible);
+          pool.sendMessageToAll("A user visible at room");
+        } else if (line.startsWith("#show")) {
+          String auser = line.replaceAll("#show@", ""); //get username
+          os.println(this.pool.getUserStatus(auser));
+        } else if (line.startsWith("#status")) {
+          this.status = line.replaceAll("#status:", "").replaceAll("#status", "");
+          os.println("Status changed to: " + this.status);
+          pool.sendMessageToAll_exceptMe(this.usern + " status changed to: " + this.status, this);
+        } else if (line.startsWith("#del")) {
+          String auser = line.replaceAll("#del@", ""); //get username
+          pool.deleteUser(auser);
+        } else if (line.startsWith("#pm")) {
+          String auser = line.replaceAll("#pm@", ""); //get username
+        } else {
+          // send to all users in room, repeat message from a user to all user
+          pool.sendMessageToAll("<" + usern + "> " + line);
         }
-
-        // send to all users in room, repeat message from a user to all user
-        amsg = "<" + usern + "> " + line;
-        pool.sendMessageToAll(amsg);
-      }
+      }//while
 
       // notification to all user
       amsg = "*** The user " + name + " is leaving the chat room !!! ***";
@@ -238,6 +329,6 @@ class clientThread extends Thread {
       clientSocket.close();
     } catch (IOException e) {
       e.printStackTrace();
-    }
+    }//try
   }
 }

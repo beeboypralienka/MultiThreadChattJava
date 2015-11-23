@@ -11,7 +11,6 @@ import java.util.Iterator;
 import java.util.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
@@ -119,15 +118,21 @@ class clientThreadPool {
 
   public clientThread searchThreadByName(String aname) {
     clientThread ret = null;
-    clientThread aret;
+    clientThread aret = null;
 
     aname = aname.trim();
     String bname = "";
 
     Iterator<clientThread> foreach = threads.iterator();
+    if (threads.size() > 0)
     while (foreach.hasNext()) {
       aret = foreach.next();
-      bname = aret.usern.trim();
+      if (aret == null) continue;
+
+      bname = aret.usern;
+      if (bname == null) continue;
+
+      bname = bname.trim();
       if (bname.equals(aname)) {
         ret = aret;
         break;
@@ -168,7 +173,12 @@ class clientThreadPool {
     Iterator<clientThread> foreach = threads.iterator();
     while (foreach.hasNext()) {
       athread = foreach.next();
-      buser = athread.usern.trim();
+      if (athread == null) continue;
+
+      buser = athread.usern;
+      if (buser == null) continue;
+
+      buser = buser.trim();
       if (buser.equals(auser)) {
         aret = auser + " status: " + athread.status;
         break;
@@ -215,7 +225,7 @@ class clientThreadPool {
 
     clientThread athread = this.searchThreadByName(uname);
     if (athread != null) {
-      athread.os.print("PM from "+uname+" "+msg);
+      athread.os.println("PM from " + uname + ": " + msg);
     }
   }
 
@@ -259,6 +269,7 @@ class clientThread extends Thread {
     System.out.println("send #die to: " + this.usern);
     this.running = false;
     this.interrupt();
+    pool.removeClientThread(this);
   }
 
   @Override
@@ -272,11 +283,12 @@ class clientThread extends Thread {
       os = new PrintStream(clientSocket.getOutputStream());
 
       System.out.println("request user+passw");
-      String name = is.readLine().trim();
+      String name;
       while (true) {
         os.println("Enter your name.");
-        
+        name = is.readLine().trim();
         if (!pool.isUserNameExists(name)) {
+          os.println("USER OK");
           break;
         } else {
           os.println("User " + name + " already exists..");
@@ -294,6 +306,11 @@ class clientThread extends Thread {
       pool.sendMessageToAll_exceptMe(amsg, this);
 
       while (this.running && !Thread.currentThread().isInterrupted()) {
+
+        if (is == null || os == null || clientSocket == null || pool == null) {
+          break;//
+        }
+
         String line = is.readLine().trim();
         if (line.startsWith("#quit")) {
           break;
@@ -322,8 +339,7 @@ class clientThread extends Thread {
           String auser = line.replaceAll("#del@", ""); //get username
           pool.deleteUser(auser);
         } else if (line.startsWith("#pm")) {
-          //String line = "";
-          line.replaceAll("#pm", "");
+          line = line.replaceAll("#pm", "");
           String uname = "";
           String messg = "";
 
@@ -345,7 +361,8 @@ class clientThread extends Thread {
             } else {
               pool.sendPM(uname, messg);
             }
-          }
+          }//
+
         } else {
           // send to all users in room, repeat message from a user to all user
           pool.sendMessageToAll("<" + usern + "> " + line);

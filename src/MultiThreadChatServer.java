@@ -1,7 +1,5 @@
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
@@ -12,8 +10,6 @@ import java.util.Iterator;
 import java.util.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -232,14 +228,14 @@ class clientThreadPool {
         athread.doDie();
     }
 
-    public void sendPM(String uname, String msg) {
+    public void sendPM(String uname, String msg, String sender) {
         if (!this.isUserNameExists(uname)) {
             return;
         }
 
         clientThread athread = this.searchThreadByName(uname);
         if (athread != null) {
-            athread.os.println("PM from " + uname + ": " + msg);
+            athread.os.println("PM from " + sender + ": " + msg);            
         }
     }
 
@@ -383,7 +379,7 @@ class clientThread extends Thread {
                         if (!pool.isUserNameExists(uname)) {
                             os.println("ERROR: " + uname + " not exists");
                         } else {
-                            pool.sendPM(uname, messg);
+                            pool.sendPM(uname, messg, usern);
                         }
                     }//
 

@@ -1,3 +1,4 @@
+package SocketProgramming;
 
 import java.io.PrintStream;
 import java.io.BufferedReader;
@@ -8,6 +9,10 @@ import java.net.UnknownHostException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ *
+ * @author Dhian Satria, Dwi Kristianto, Fachrul Pralienka, Hendra Maulana
+ */
 public class MultiThreadChatClient implements Runnable {
 
     // The client socket
@@ -87,7 +92,7 @@ public class MultiThreadChatClient implements Runnable {
             closed = true;
             inputLine.close();            
         } catch (IOException e) {
-            //System.err.println("IOException:  " + e);
+            System.err.println("IOException:  " + e);
             //e.printStackTrace();
         }
     }

@@ -8,11 +8,18 @@ import java.net.Socket;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Iterator;
 
 /**
  *
  * @author Dhian Satria, Dwi Kristianto, Fachrul Pralienka, Hendra Maulana
+ *
+ * The chat client thread. This client thread opens the input and the output
+ * streams for a particular client, ask the client's name, informs all the
+ * clients connected to the server about the fact that a new client has joined
+ * the chat room, and as long as it receive data, echos that data back to all
+ * other clients. When a client leaves the chat room this thread informs also
+ * all the clients about that and terminates.
+ *
  */
 public class ClientThread extends Thread {
 
@@ -21,6 +28,7 @@ public class ClientThread extends Thread {
     public Socket clientSocket = null;
 
     public ClientThreadPool pool = null;
+    public ClientThreadPoolRoom room = null;
 
     public String usern;
     public String passw;
@@ -39,13 +47,14 @@ public class ClientThread extends Thread {
         System.out.println("thread created");
     }
 
-    public ClientThread(MultiThreadChatServer mts) {
-        this.clientSocket = mts.clientSocket;
-        this.pool = mts.publicRoom;
+    public ClientThread(Socket clientSocket, ClientThreadPool apool, ClientThreadPoolRoom aroom) {
+        this.clientSocket = clientSocket;
+        this.pool = apool;
         this.mode = "chat";
         this.visible = true;
         this.status = "";
         this.running = true;
+        this.room = aroom;
         System.out.println("thread created");
     }
 
@@ -148,22 +157,53 @@ public class ClientThread extends Thread {
                         }
                     }//
 
+                } else if (line.startsWith("#exit")) {
+                    String agroup = line.replaceAll("#exit@", "");
+
+                    if (this.room != null) {
+                        ClientThreadPool aroom;
+                        aroom = this.room.searchClientThreadPool(agroup);
+                        if (aroom != null) {
+                            aroom.removeClientThread(this);
+                        }
+                    }
                 } else if (line.startsWith("#join")) {
-                    //line = line.replaceAll("#join", "");
-                    // cek dulu dia itu udah pernah join belum
-                    // blm join tapi pake @if, pesan warning
-                    
-                    
-                    ClientThread tempThread = null;
-                    tempThread = pool.searchThreadByName(usern);
+                    String agroup = line.replaceAll("#join@", "");                    
+                    os.println(usern+" mau join Group");
+                    if (this.room != null) {
+                        os.println("Kondisi Room != NULL");
+                        ClientThreadPool theGroup;
+                        if (this.room.isRoomNameExists(agroup)) {
+                            theGroup = this.room.addNewRoom(agroup);
+                        } else {
+                            theGroup = this.room.searchClientThreadPool(agroup);
+                        }
 
-                    MultiThreadChatServer mts = null;
-                    mts.privateRoom.addClientThread(tempThread);
-                    tempThread.start();
-                    
-                    mts.privateRoom.sendMessageToAll("Hallo #join");
+                        if (theGroup != null) {
+                            os.println("Kondisi theGroup != NULL");
+                            if (!theGroup.isUserNameExists(agroup)) {
+                                theGroup.addClientThread(this);
+                            }
 
-                    //System.out.println(name + " Masuk Grup");
+                            amsg = "User " + this.usern + " has joined to " + agroup;
+                            theGroup.sendMessageToAll(amsg);
+                        }
+
+                    }else{
+                        os.println("Kondisi Room == NULL");
+                    }
+                } else if (line.startsWith("@")) {
+                    String[] strs = line.split(" ");
+                    String aname = strs[0].replaceAll("@", "");
+                    String mesg = line.replaceAll('@' + aname, "").trim();
+
+                    // send PM if username exists
+                    if (this.pool.isUserNameExists(aname)) {
+                        this.pool.sendPM(aname, mesg, usern);
+                    } else if (this.room.isRoomNameExists(aname)) {
+                        this.room.sendMessage(aname, mesg, this);
+                    }
+
                 } else {
                     // send to all users in room, repeat message from a user to all user
                     pool.sendMessageToAll("<" + usern + "> " + line);

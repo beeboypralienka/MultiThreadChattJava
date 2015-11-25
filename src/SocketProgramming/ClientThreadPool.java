@@ -6,11 +6,16 @@ import java.util.Iterator;
 /**
  *
  * @author Dhian Satria, Dwi Kristianto, Fachrul Pralienka, Hendra Maulana
+ *
+ * Client Thread Pool == Room
+ * http://stackoverflow.com/questions/1647260/java-dynamic-array-sizes
+ *
  */
 public class ClientThreadPool {
 
     private final ArrayList<ClientThread> threads;
     private final int poolKind;
+    public String name;
 
     public ClientThreadPool(int akind) {
         this.threads = new ArrayList<>();
@@ -159,9 +164,4 @@ public class ClientThreadPool {
             athread.os.println("PM from " + sender + ": " + msg);
         }
     }
-
-    public void enterRoom(String nama, ClientThread bthread) {
-        
-    }
-
 }

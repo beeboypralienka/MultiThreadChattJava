@@ -28,7 +28,7 @@ public class ClientThread extends Thread {
     public Socket clientSocket = null;
 
     public ClientThreadPool pool = null;
-    public ClientThreadPoolRoom room = null;
+    public static ClientThreadPoolRoom room = null;
 
     public String usern;
     public String passw;
@@ -169,18 +169,20 @@ public class ClientThread extends Thread {
                     }
                 } else if (line.startsWith("#join")) {
                     String agroup = line.replaceAll("#join@", "");                    
-                    os.println(usern+" mau join Group");
+                    //os.println(usern+" mau join Group");
                     if (this.room != null) {
-                        os.println("Kondisi Room != NULL");
+                        //os.println("Kondisi Room != NULL");                        
                         ClientThreadPool theGroup;
                         if (this.room.isRoomNameExists(agroup)) {
-                            theGroup = this.room.addNewRoom(agroup);
-                        } else {
-                            theGroup = this.room.searchClientThreadPool(agroup);
+                            theGroup = this.room.searchClientThreadPool(agroup);                            
+                            //os.println("Kondisi IF isRoomNameExist");
+                        } else {                                            
+                            theGroup = this.room.addNewRoom(agroup);                            
+                            //os.println("Kondisi ELSE isRoomNameExist, boolean: "+this.room.isRoomNameExists(agroup));                            
                         }
 
                         if (theGroup != null) {
-                            os.println("Kondisi theGroup != NULL");
+                            //os.println("Kondisi theGroup != NULL");
                             if (!theGroup.isUserNameExists(agroup)) {
                                 theGroup.addClientThread(this);
                             }
@@ -189,9 +191,9 @@ public class ClientThread extends Thread {
                             theGroup.sendMessageToAll(amsg);
                         }
 
-                    }else{
-                        os.println("Kondisi Room == NULL");
-                    }
+                    }//else{
+                     //   os.println("Kondisi Room == NULL");
+                    //}
                 } else if (line.startsWith("@")) {
                     String[] strs = line.split(" ");
                     String aname = strs[0].replaceAll("@", "");

@@ -23,6 +23,7 @@ public class ClientThreadPoolRoom {
 
         ClientThreadPool ret = new ClientThreadPool(1);
         ret.name = roomname;
+        rooms.add(ret);
         return ret;
     }
 
@@ -78,6 +79,6 @@ public class ClientThreadPoolRoom {
         if (apool != null) {
             apool.sendMessageToAll_exceptMe(msg, meThread);
         }
-    }
+    }        
 
 }

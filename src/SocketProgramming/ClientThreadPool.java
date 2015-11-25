@@ -160,4 +160,8 @@ public class ClientThreadPool {
         }
     }
 
+    public void enterRoom(String nama, ClientThread bthread) {
+        
+    }
+
 }

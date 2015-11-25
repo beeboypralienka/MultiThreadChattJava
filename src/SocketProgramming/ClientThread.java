@@ -8,6 +8,7 @@ import java.net.Socket;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Iterator;
 
 /**
  *
@@ -147,8 +148,22 @@ public class ClientThread extends Thread {
                         }
                     }//
 
-                } else if(line.startsWith("#join")){
+                } else if (line.startsWith("#join")) {
+                    //line = line.replaceAll("#join", "");
+                    // cek dulu dia itu udah pernah join belum
+                    // blm join tapi pake @if, pesan warning
                     
+                    
+                    ClientThread tempThread = null;
+                    tempThread = pool.searchThreadByName(usern);
+
+                    MultiThreadChatServer mts = null;
+                    mts.privateRoom.addClientThread(tempThread);
+                    tempThread.start();
+                    
+                    mts.privateRoom.sendMessageToAll("Hallo #join");
+
+                    //System.out.println(name + " Masuk Grup");
                 } else {
                     // send to all users in room, repeat message from a user to all user
                     pool.sendMessageToAll("<" + usern + "> " + line);

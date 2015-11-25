@@ -16,13 +16,10 @@ public class MultiThreadChatServer {
     private static ServerSocket serverSocket = null;
     // The client socket.
     public Socket clientSocket = null;
-
-    // This chat server can accept up to maxClientsCount clients' connections.
-    //private static final int maxClientsCount = 50;
-    //public static final clientThread[] threads = new clientThread[maxClientsCount]; ///ada di kelas utama
-
-    public ClientThreadPool publicRoom = new ClientThreadPool(0);
-    // membuat arraylist dengan tipe ClientThreadPool
+    // This chat server can accept up to maxClientsCount clients' connections.    
+    public ClientThreadPool publicRoom = new ClientThreadPool(0);    
+    // Membuat arraylist dengan tipe ClientThreadPool    
+    public static ClientThreadPool privateRoom = new ClientThreadPool(0);
 
     public static void main(String args[]) {
 
